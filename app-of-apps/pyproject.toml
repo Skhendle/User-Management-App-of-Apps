@@ -8,4 +8,6 @@ dependencies = [
     "black>=25.1.0",
     "django>=5.1.6",
     "django-extensions>=3.2.3",
+    "pytest>=8.3.4",
+    "pytest-django>=4.10.0",
 ]
