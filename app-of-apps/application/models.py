@@ -1,9 +1,9 @@
 from django.db import models
-from django.contrib.auth.models import User
-import uuid
+from django.contrib.auth.models import User, Group, Permission
 
-def generate_api_key():
-    return uuid.uuid4().hex
+from django.core.exceptions import PermissionDenied
+
+import uuid
 
 
 class BaseModel(models.Model):
@@ -21,6 +21,8 @@ class BaseModel(models.Model):
         abstract = True  # Ensures this model is not created as a table
 
 
+def generate_api_key():
+    return uuid.uuid4().hex  # Generates a new unique API key every time
 
 class Application(BaseModel):
     user = models.ForeignKey(
@@ -33,21 +35,35 @@ class Application(BaseModel):
     API_KEY = models.CharField(
         max_length=255,
         unique=True,
-        default=uuid.uuid4().hex,
+        default=generate_api_key,  # Call the function instead of setting a fixed value
         editable=False
     )
 
     def __str__(self):
         return f"{self.name} - {self.user.username}"
 
+    def save(self, *args, **kwargs):
+        """ Ensure only users with the correct role can create applications """
+        if not self.user.groups.filter(name="developer").exists():
+            raise PermissionDenied("User does not have permission to create applications.")
+        super().save(*args, **kwargs)
+
+
+
 class Role(BaseModel):
+    """
+    Defines roles that belong to a specific application.
+    """
     application = models.ForeignKey(
-        Application,
-        on_delete=models.CASCADE,
+        Application, 
+        on_delete=models.CASCADE, 
         related_name="roles"
     )
     name = models.CharField(max_length=50)
     description = models.TextField(null=True, blank=True)
+
+    # FIX: Add ManyToMany relationship with Permission
+    permissions = models.ManyToManyField('AppPermission', related_name="roles")
 
     class Meta:
         unique_together = ('application', 'name')
@@ -55,7 +71,14 @@ class Role(BaseModel):
     def __str__(self):
         return f"{self.name} ({self.application.name})"
 
-class Permission(BaseModel):
+    def save(self, *args, **kwargs):
+        """ Ensure only users with the correct role can create applications """
+        if not self.application.user.groups.filter(name="developer").exists():
+            raise PermissionDenied("User does not have permission to create applications.")
+        super().save(*args, **kwargs)
+
+
+class AppPermission(BaseModel):
     application = models.ForeignKey(
         Application,
         on_delete=models.CASCADE,
@@ -69,6 +92,12 @@ class Permission(BaseModel):
 
     def __str__(self):
         return f"{self.name} ({self.application.name})"
+
+    def save(self, *args, **kwargs):
+        """ Ensure only users with the correct role can create applications """
+        if not self.application.user.groups.filter(name="developer").exists():
+            raise PermissionDenied("User does not have permission to create applications.")
+        super().save(*args, **kwargs)
 
 
 class ApplicationUser(BaseModel):
@@ -90,8 +119,6 @@ class ApplicationUser(BaseModel):
         on_delete=models.PROTECT,  # Prevent deletion of a role if assigned
         related_name="role_users"
     )
-
-
 
     class Meta:
         unique_together = ('application', 'user')  # Prevent duplicate user-application pair
