@@ -6,8 +6,17 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "black>=25.1.0",
+    "cryptography>=44.0.1",
+    "dj-rest-auth>=7.0.1",
     "django>=5.1.6",
+    "django-allauth>=65.4.1",
     "django-extensions>=3.2.3",
+    "djangorestframework>=3.15.2",
+    "djangorestframework-simplejwt>=5.4.0",
+    "drf-yasg>=1.21.8",
     "pytest>=8.3.4",
     "pytest-django>=4.10.0",
+    "requests>=2.32.3",
+    "requests-oauthlib>=2.0.0",
+    "whitenoise>=6.9.0",
 ]
